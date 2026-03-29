@@ -19,6 +19,42 @@ function CopyLinkButton({ text }: { text: string }) {
   );
 }
 
+async function compressImage(file: File, maxSizeMB = 1.5): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement('canvas');
+      let { width, height } = img;
+      const MAX_DIM = 2400;
+      if (width > MAX_DIM || height > MAX_DIM) {
+        if (width > height) { height = Math.round(height * MAX_DIM / width); width = MAX_DIM; }
+        else { width = Math.round(width * MAX_DIM / height); height = MAX_DIM; }
+      }
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+
+      let quality = 0.85;
+      const tryCompress = () => {
+        canvas.toBlob(blob => {
+          if (!blob) return resolve(file);
+          if (blob.size <= maxSizeMB * 1024 * 1024 || quality <= 0.3) {
+            resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+          } else {
+            quality -= 0.1;
+            tryCompress();
+          }
+        }, 'image/jpeg', quality);
+      };
+      tryCompress();
+    };
+    img.onerror = () => resolve(file);
+    img.src = url;
+  });
+}
+
 export default function GalleryDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -52,11 +88,12 @@ export default function GalleryDetail() {
 
   const uploadFiles = async (files: FileList | File[]) => {
     if (!id || files.length === 0) return;
-    const formData = new FormData();
-    Array.from(files).forEach(f => formData.append('photos', f));
     setUploading(true);
     setUploadProgress(0);
     try {
+      const compressed = await Promise.all(Array.from(files).map(f => compressImage(f)));
+      const formData = new FormData();
+      compressed.forEach(f => formData.append('photos', f));
       await api.post(`/galleries/${id}/photos`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: e => {
@@ -247,7 +284,7 @@ export default function GalleryDetail() {
                 <p className="text-sm text-gray-500 dark:text-zinc-400">
                   Arrastra fotos aquí o <span className="underline">haz click</span>
                 </p>
-                <p className="text-xs text-gray-400 dark:text-zinc-600 mt-1">JPG, PNG, WebP · Hasta 30MB por foto</p>
+                <p className="text-xs text-gray-400 dark:text-zinc-600 mt-1">JPG, PNG, WebP · Se comprimen automáticamente</p>
               </>
             )}
           </div>
