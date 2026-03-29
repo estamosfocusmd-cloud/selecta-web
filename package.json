@@ -14,5 +14,9 @@
   "devDependencies": {
     "concurrently": "^8.2.2",
     "localtunnel": "^2.0.2"
+  },
+  "dependencies": {
+    "package.json": "^2.0.1",
+    "vercel.json": "^0.1.0"
   }
 }
