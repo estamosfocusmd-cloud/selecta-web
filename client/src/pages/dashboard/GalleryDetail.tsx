@@ -19,6 +19,21 @@ function CopyLinkButton({ text }: { text: string }) {
   );
 }
 
+function CopySelectionButton({ names }: { names: string[] }) {
+  const [copied, setCopied] = useState(false);
+  const text = names.map(n => `"${n}."`).join(' OR ');
+  const copy = async () => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+  return (
+    <button onClick={copy} className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border transition-colors ${copied ? 'text-emerald-600 border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/30' : 'text-gray-400 border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500'}`}>
+      {copied ? <><Check size={12} /> Copiado</> : <><Copy size={12} /> Copiar</>}
+    </button>
+  );
+}
+
 async function compressImage(file: File, maxSizeMB = 1.5): Promise<File> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -66,6 +81,10 @@ export default function GalleryDetail() {
   const [error, setError] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [expandedSelection, setExpandedSelection] = useState<string | null>(null);
+  const [editingSlug, setEditingSlug] = useState(false);
+  const [slugInput, setSlugInput] = useState('');
+  const [slugError, setSlugError] = useState('');
+  const [slugSaving, setSlugSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchGallery = useCallback(async () => {
@@ -138,6 +157,21 @@ export default function GalleryDetail() {
       setGallery(res.data);
     } catch (err) {
       alert(getApiError(err));
+    }
+  };
+
+  const handleSaveSlug = async () => {
+    if (!id || !slugInput.trim()) return;
+    setSlugSaving(true);
+    setSlugError('');
+    try {
+      const res = await api.patch(`/galleries/${id}`, { slug: slugInput.trim() });
+      setGallery(res.data);
+      setEditingSlug(false);
+    } catch (err) {
+      setSlugError(getApiError(err));
+    } finally {
+      setSlugSaving(false);
     }
   };
 
@@ -229,6 +263,39 @@ export default function GalleryDetail() {
               </Link>
             </div>
           </div>
+
+          {editingSlug ? (
+            <div className="mt-3 space-y-2">
+              <div className="flex items-center input px-0 overflow-hidden">
+                <span className="pl-3 pr-1 text-gray-400 dark:text-zinc-500 text-sm whitespace-nowrap">/g/</span>
+                <input
+                  autoFocus
+                  value={slugInput}
+                  onChange={e => { setSlugInput(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-')); setSlugError(''); }}
+                  onKeyDown={e => { if (e.key === 'Enter') handleSaveSlug(); if (e.key === 'Escape') setEditingSlug(false); }}
+                  className="flex-1 bg-transparent outline-none pr-3 py-2.5 text-sm"
+                  placeholder={gallery.slug}
+                />
+              </div>
+              {slugError && <p className="text-xs text-red-500">{slugError}</p>}
+              <div className="flex gap-2">
+                <button onClick={handleSaveSlug} disabled={slugSaving || !slugInput.trim()} className="btn-primary text-xs px-3 py-1.5">
+                  {slugSaving ? 'Guardando...' : 'Guardar'}
+                </button>
+                <button onClick={() => { setEditingSlug(false); setSlugError(''); }} className="btn-secondary text-xs px-3 py-1.5">
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => { setSlugInput(gallery.slug); setEditingSlug(true); }}
+              className="mt-2 text-xs text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors underline underline-offset-2"
+            >
+              Personalizar link
+            </button>
+          )}
+
           {gallery.hasPassword && (
             <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 flex items-center gap-1">
               🔒 Esta galería está protegida con contraseña
@@ -350,13 +417,19 @@ export default function GalleryDetail() {
                           "{sel.note}"
                         </p>
                       )}
-                      <div className="space-y-1 mt-3">
-                        <p className="text-xs text-gray-400 dark:text-zinc-500 font-medium mb-2">Archivos seleccionados:</p>
-                        {sel.selectedPhotoDetails.map(p => (
-                          <div key={p.id} className="text-xs font-mono text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-zinc-800 rounded px-3 py-1.5">
-                            {p.originalName}
-                          </div>
-                        ))}
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs text-gray-400 dark:text-zinc-500 font-medium">Fotos seleccionadas:</p>
+                          <CopySelectionButton names={sel.selectedPhotoDetails.map(p => p.originalName)} />
+                        </div>
+                        <div className="text-xs font-mono text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-zinc-800 rounded-lg px-3 py-2.5 leading-relaxed break-all">
+                          {sel.selectedPhotoDetails.map((p, i) => (
+                            <span key={p.id}>
+                              <span className="text-gray-400 dark:text-zinc-500">"</span>{p.originalName}<span className="text-gray-400 dark:text-zinc-500">."</span>
+                              {i < sel.selectedPhotoDetails.length - 1 && <span className="text-blue-500 dark:text-blue-400 font-semibold"> OR </span>}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}

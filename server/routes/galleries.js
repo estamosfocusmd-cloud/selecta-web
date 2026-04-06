@@ -59,13 +59,23 @@ router.get('/', async (_req, res) => {
 // POST / — create gallery
 router.post('/', async (req, res) => {
   try {
-    const { name, clientName, password, maxSelections } = req.body;
+    const { name, clientName, password, maxSelections, customSlug } = req.body;
     if (!name) return res.status(400).json({ error: 'El nombre es requerido' });
 
-    const slug = name.toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()
-      + '-' + uuidv4().slice(0, 8);
+    let slug;
+    if (customSlug && customSlug.trim()) {
+      slug = customSlug.trim().toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      if (!slug) return res.status(400).json({ error: 'El link personalizado no es válido' });
+      const existing = await Gallery.findOne({ slug });
+      if (existing) return res.status(400).json({ error: 'Ese link ya está en uso, elegí otro' });
+    } else {
+      slug = name.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()
+        + '-' + uuidv4().slice(0, 8);
+    }
 
     const gallery = await Gallery.create({
       name,
@@ -98,6 +108,15 @@ router.patch('/:id', async (req, res) => {
     const gallery = await Gallery.findById(req.params.id);
     if (!gallery) return res.status(404).json({ error: 'Galería no encontrada' });
     if (req.body.status) gallery.status = req.body.status;
+    if (req.body.slug) {
+      const newSlug = req.body.slug.trim().toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      if (!newSlug) return res.status(400).json({ error: 'El link no es válido' });
+      const existing = await Gallery.findOne({ slug: newSlug, _id: { $ne: gallery._id } });
+      if (existing) return res.status(400).json({ error: 'Ese link ya está en uso' });
+      gallery.slug = newSlug;
+    }
     await gallery.save();
     res.json(galleryToJSON(gallery));
   } catch { res.status(500).json({ error: 'Error del servidor' }); }
@@ -148,8 +167,8 @@ router.post('/:id/photos', upload.array('photos', 200), async (req, res) => {
       id: p._id.toString(), originalName: p.originalName, url: p.url, order: p.order
     })));
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error al subir fotos' });
+    console.error('Upload error:', err);
+    res.status(500).json({ error: err.message || 'Error al subir fotos' });
   }
 });
 
