@@ -10,7 +10,8 @@ export default function NewGallery() {
     name: '',
     clientName: '',
     password: '',
-    maxSelections: ''
+    maxSelections: '',
+    customSlug: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -29,7 +30,8 @@ export default function NewGallery() {
         name: form.name.trim(),
         clientName: form.clientName.trim(),
         password: form.password.trim() || undefined,
-        maxSelections: form.maxSelections ? parseInt(form.maxSelections) : 0
+        maxSelections: form.maxSelections ? parseInt(form.maxSelections) : 0,
+        customSlug: form.customSlug.trim() || undefined
       });
       navigate(`/dashboard/gallery/${res.data.id}`);
     } catch (err) {
@@ -75,6 +77,22 @@ export default function NewGallery() {
               placeholder="Ej: Ana García"
             />
             <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1.5">Opcional. Solo visible en tu panel.</p>
+          </div>
+
+          <div>
+            <label className="label">Link personalizado</label>
+            <div className="flex items-center input px-0 overflow-hidden">
+              <span className="pl-3 pr-1 text-gray-400 dark:text-zinc-500 text-sm whitespace-nowrap">/g/</span>
+              <input
+                name="customSlug"
+                value={form.customSlug}
+                onChange={e => setForm(f => ({ ...f, customSlug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') }))}
+                className="flex-1 bg-transparent outline-none pr-3 py-2.5 text-sm"
+                placeholder="ana-y-carlos"
+                autoComplete="off"
+              />
+            </div>
+            <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1.5">Opcional. Si lo dejás vacío se genera uno automático.</p>
           </div>
 
           <div>
