@@ -14,6 +14,8 @@ export interface Gallery {
   hasPassword: boolean;
   maxSelections: number;
   status: 'active' | 'closed';
+  selectionMode: 'single' | 'multiple';
+  isFinalized: boolean;
   createdAt: string;
   photos: Photo[];
 }
@@ -26,6 +28,8 @@ export interface GalleryPublicInfo {
   maxSelections: number;
   status: 'active' | 'closed';
   photoCount: number;
+  selectionMode: 'single' | 'multiple';
+  isFinalized: boolean;
 }
 
 export interface Selection {

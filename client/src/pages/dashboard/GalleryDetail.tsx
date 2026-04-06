@@ -232,16 +232,34 @@ export default function GalleryDetail() {
               }`}>
                 {gallery.status === 'active' ? 'Activa' : 'Cerrada'}
               </span>
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400">
+                {gallery.selectionMode === 'single' ? 'Selección única' : 'Selección múltiple'}
+              </span>
+              {gallery.selectionMode === 'single' && gallery.isFinalized && (
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400">
+                  Finalizada
+                </span>
+              )}
             </div>
             {gallery.clientName && (
               <p className="text-sm text-gray-500 dark:text-zinc-400">{gallery.clientName}</p>
             )}
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={handleToggleStatus}
-              className="btn-secondary text-sm px-4 py-2"
-            >
+            {gallery.selectionMode === 'single' && gallery.isFinalized && (
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await api.patch(`/galleries/${id}`, { isFinalized: false });
+                    setGallery(res.data);
+                  } catch (err) { alert(getApiError(err)); }
+                }}
+                className="btn-secondary text-sm px-4 py-2 text-amber-600 border-amber-300 dark:border-amber-700"
+              >
+                Reabrir selección
+              </button>
+            )}
+            <button onClick={handleToggleStatus} className="btn-secondary text-sm px-4 py-2">
               {gallery.status === 'active' ? 'Cerrar galería' : 'Reactivar'}
             </button>
             <button onClick={handleDelete} className="btn-ghost p-2 text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950" title="Eliminar galería">

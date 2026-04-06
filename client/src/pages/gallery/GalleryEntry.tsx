@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Lock, ArrowRight, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import { Lock, ArrowRight, Eye, EyeOff, CheckCircle2, Ban } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { clientApi, getApiError } from '../../utils/api';
 import { GalleryPublicInfo } from '../../types';
@@ -82,6 +82,20 @@ export default function GalleryEntry() {
         <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Selección ya enviada</h1>
         <p className="text-sm text-gray-500 dark:text-zinc-400">
           Ya enviaste tu selección de fotos para esta galería. El fotógrafo ha recibido tu elección.
+        </p>
+      </div>
+    </div>
+  );
+
+  if (info?.selectionMode === 'single' && info?.isFinalized) return (
+    <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 flex items-center justify-center p-4">
+      <div className="text-center max-w-sm">
+        <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-5">
+          <Ban size={28} className="text-gray-400 dark:text-zinc-500" strokeWidth={1.5} />
+        </div>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Galería finalizada</h1>
+        <p className="text-sm text-gray-500 dark:text-zinc-400">
+          La selección de fotos para esta galería ya fue realizada.
         </p>
       </div>
     </div>

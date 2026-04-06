@@ -20,7 +20,9 @@ router.get('/:slug', async (req, res) => {
       hasPassword:   g.hasPassword,
       maxSelections: g.maxSelections,
       status:        g.status,
-      photoCount:    g.photos.length
+      photoCount:    g.photos.length,
+      selectionMode: g.selectionMode || 'multiple',
+      isFinalized:   g.isFinalized || false
     });
   } catch { res.status(500).json({ error: 'Error del servidor' }); }
 });
@@ -32,6 +34,9 @@ router.post('/:slug/access', async (req, res) => {
     if (!g) return res.status(404).json({ error: 'Galería no encontrada' });
     if (g.status !== 'active')
       return res.status(403).json({ error: 'Esta galería ya no está disponible' });
+
+    if (g.selectionMode === 'single' && g.isFinalized)
+      return res.status(403).json({ error: 'Esta galería ya fue finalizada' });
 
     if (g.hasPassword) {
       const { password } = req.body;
@@ -56,6 +61,8 @@ router.get('/:slug/photos', authenticateGallery, async (req, res) => {
     if (!g) return res.status(404).json({ error: 'Galería no encontrada' });
     if (g.status !== 'active')
       return res.status(403).json({ error: 'Esta galería ya no está disponible' });
+    if (g.selectionMode === 'single' && g.isFinalized)
+      return res.status(403).json({ error: 'Esta galería ya fue finalizada' });
 
     const photos = [...g.photos]
       .sort((a, b) => a.order - b.order)
@@ -67,8 +74,11 @@ router.get('/:slug/photos', authenticateGallery, async (req, res) => {
 // POST /:slug/selection — submit selection
 router.post('/:slug/selection', authenticateGallery, async (req, res) => {
   try {
-    const g = await Gallery.findOne({ slug: req.params.slug }).lean();
+    const g = await Gallery.findOne({ slug: req.params.slug });
     if (!g) return res.status(404).json({ error: 'Galería no encontrada' });
+
+    if (g.selectionMode === 'single' && g.isFinalized)
+      return res.status(403).json({ error: 'Esta galería ya fue finalizada' });
 
     const { selectedPhotos, clientName, note } = req.body;
     if (!Array.isArray(selectedPhotos) || selectedPhotos.length === 0)
@@ -90,6 +100,11 @@ router.post('/:slug/selection', authenticateGallery, async (req, res) => {
       }),
       note: note || ''
     });
+
+    if (g.selectionMode === 'single') {
+      g.isFinalized = true;
+      await g.save();
+    }
 
     res.json({ success: true, selectionId: sel._id.toString(), count: valid.length });
   } catch (err) {

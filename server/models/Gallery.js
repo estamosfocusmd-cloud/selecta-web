@@ -15,6 +15,8 @@ const gallerySchema = new mongoose.Schema({
   hasPassword:   { type: Boolean, default: false },
   maxSelections: { type: Number, default: 0 },
   status:        { type: String, enum: ['active', 'closed'], default: 'active' },
+  selectionMode: { type: String, enum: ['single', 'multiple'], default: 'multiple' },
+  isFinalized:   { type: Boolean, default: false },
   photos:        [photoSchema]
 }, { timestamps: true });
 

@@ -28,6 +28,8 @@ function galleryToJSON(g) {
     hasPassword:   g.hasPassword,
     maxSelections: g.maxSelections,
     status:        g.status,
+    selectionMode: g.selectionMode || 'multiple',
+    isFinalized:   g.isFinalized || false,
     createdAt:     g.createdAt,
     photos:        g.photos.map(p => ({
       id:           p._id.toString(),
@@ -59,7 +61,7 @@ router.get('/', async (_req, res) => {
 // POST / — create gallery
 router.post('/', async (req, res) => {
   try {
-    const { name, clientName, password, maxSelections, customSlug } = req.body;
+    const { name, clientName, password, maxSelections, customSlug, selectionMode } = req.body;
     if (!name) return res.status(400).json({ error: 'El nombre es requerido' });
 
     let slug;
@@ -84,6 +86,7 @@ router.post('/', async (req, res) => {
       passwordHash:  password ? await bcrypt.hash(password, 10) : null,
       hasPassword:   !!password,
       maxSelections: parseInt(maxSelections) || 0,
+      selectionMode: selectionMode === 'single' ? 'single' : 'multiple',
       photos: []
     });
     res.status(201).json(galleryToJSON(gallery));
@@ -108,6 +111,8 @@ router.patch('/:id', async (req, res) => {
     const gallery = await Gallery.findById(req.params.id);
     if (!gallery) return res.status(404).json({ error: 'Galería no encontrada' });
     if (req.body.status) gallery.status = req.body.status;
+    if (req.body.selectionMode) gallery.selectionMode = req.body.selectionMode;
+    if (typeof req.body.isFinalized === 'boolean') gallery.isFinalized = req.body.isFinalized;
     if (req.body.slug) {
       const newSlug = req.body.slug.trim().toLowerCase()
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')

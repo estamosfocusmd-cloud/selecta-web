@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Users, User } from 'lucide-react';
 import Navbar from '../../components/layout/Navbar';
 import { api, getApiError } from '../../utils/api';
 
@@ -11,7 +11,8 @@ export default function NewGallery() {
     clientName: '',
     password: '',
     maxSelections: '',
-    customSlug: ''
+    customSlug: '',
+    selectionMode: 'multiple'
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -31,7 +32,8 @@ export default function NewGallery() {
         clientName: form.clientName.trim(),
         password: form.password.trim() || undefined,
         maxSelections: form.maxSelections ? parseInt(form.maxSelections) : 0,
-        customSlug: form.customSlug.trim() || undefined
+        customSlug: form.customSlug.trim() || undefined,
+        selectionMode: form.selectionMode
       });
       navigate(`/dashboard/gallery/${res.data.id}`);
     } catch (err) {
@@ -54,6 +56,47 @@ export default function NewGallery() {
         <p className="text-sm text-gray-500 dark:text-zinc-400 mb-8">Configura los detalles y empieza a subir fotos.</p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="label">Modo de selección</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setForm(f => ({ ...f, selectionMode: 'multiple' }))}
+                className={`flex flex-col items-start gap-1.5 p-4 rounded-xl border-2 text-left transition-colors ${
+                  form.selectionMode === 'multiple'
+                    ? 'border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-gray-900'
+                    : 'border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500'
+                }`}
+              >
+                <Users size={18} />
+                <span className="text-sm font-semibold">Múltiple</span>
+                <span className={`text-xs leading-tight ${form.selectionMode === 'multiple' ? 'text-gray-300 dark:text-gray-600' : 'text-gray-400 dark:text-zinc-500'}`}>
+                  Cada cliente selecciona sus fotos
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm(f => ({ ...f, selectionMode: 'single' }))}
+                className={`flex flex-col items-start gap-1.5 p-4 rounded-xl border-2 text-left transition-colors ${
+                  form.selectionMode === 'single'
+                    ? 'border-gray-900 dark:border-white bg-gray-900 dark:bg-white text-white dark:text-gray-900'
+                    : 'border-gray-200 dark:border-zinc-700 hover:border-gray-400 dark:hover:border-zinc-500'
+                }`}
+              >
+                <User size={18} />
+                <span className="text-sm font-semibold">Única</span>
+                <span className={`text-xs leading-tight ${form.selectionMode === 'single' ? 'text-gray-300 dark:text-gray-600' : 'text-gray-400 dark:text-zinc-500'}`}>
+                  Una sola selección final
+                </span>
+              </button>
+            </div>
+            <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1.5">
+              {form.selectionMode === 'single'
+                ? 'Ideal para casamientos, 15 años. Una vez enviada, la galería se cierra automáticamente.'
+                : 'Ideal para colegios, grupos. Cada cliente puede enviar su propia selección.'}
+            </p>
+          </div>
+
           <div>
             <label className="label">Nombre de la galería *</label>
             <input
