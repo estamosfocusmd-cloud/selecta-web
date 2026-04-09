@@ -2,6 +2,9 @@ const express  = require('express');
 const multer   = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const bcrypt   = require('bcryptjs');
+const https    = require('https');
+const http     = require('http');
+const archiver = require('archiver');
 const Gallery  = require('../models/Gallery');
 const Selection = require('../models/Selection');
 const { uploadStream, deleteImage } = require('../utils/cloudinary');
@@ -21,21 +24,22 @@ const upload = multer({
 
 function galleryToJSON(g) {
   return {
-    id:            g._id.toString(),
-    name:          g.name,
-    clientName:    g.clientName,
-    slug:          g.slug,
-    hasPassword:   g.hasPassword,
-    maxSelections: g.maxSelections,
-    status:        g.status,
-    selectionMode: g.selectionMode || 'multiple',
-    isFinalized:   g.isFinalized || false,
-    createdAt:     g.createdAt,
-    photos:        g.photos.map(p => ({
-      id:           p._id.toString(),
-      originalName: p.originalName,
-      url:          p.url,
-      order:        p.order
+    id:                  g._id.toString(),
+    name:                g.name,
+    clientName:          g.clientName,
+    slug:                g.slug,
+    hasPassword:         g.hasPassword,
+    maxSelections:       g.maxSelections,
+    status:              g.status,
+    selectionMode:       g.selectionMode || 'multiple',
+    isFinalized:         g.isFinalized || false,
+    hasDeliveryPassword: g.hasDeliveryPassword || false,
+    createdAt:           g.createdAt,
+    photos:              g.photos.map(p => ({
+      id: p._id.toString(), originalName: p.originalName, url: p.url, order: p.order
+    })),
+    deliveryPhotos:      (g.deliveryPhotos || []).map(p => ({
+      id: p._id.toString(), originalName: p.originalName, url: p.url, order: p.order
     }))
   };
 }
@@ -202,6 +206,103 @@ router.get('/:id/selections', async (req, res) => {
     const selections = await Selection.find({ galleryId: req.params.id }).sort({ createdAt: -1 }).lean();
     res.json(selections.map(s => ({ ...s, id: s._id.toString() })));
   } catch { res.status(500).json({ error: 'Error del servidor' }); }
+});
+
+// POST /:id/delivery/photos — upload delivery photos
+router.post('/:id/delivery/photos', upload.array('photos', 500), async (req, res) => {
+  try {
+    const gallery = await Gallery.findById(req.params.id);
+    if (!gallery) return res.status(404).json({ error: 'Galería no encontrada' });
+
+    const uploaded = await Promise.all(req.files.map(async (file, i) => {
+      const result = await uploadStream(file.buffer, {
+        folder: `selecta/${req.params.id}/delivery`,
+        transformation: [{ quality: 'auto', fetch_format: 'auto' }]
+      });
+      return {
+        publicId:     result.public_id,
+        originalName: file.originalname,
+        url:          result.secure_url,
+        order:        (gallery.deliveryPhotos || []).length + i
+      };
+    }));
+
+    gallery.deliveryPhotos.push(...uploaded);
+    await gallery.save();
+    res.json(gallery.deliveryPhotos.slice(-uploaded.length).map(p => ({
+      id: p._id.toString(), originalName: p.originalName, url: p.url, order: p.order
+    })));
+  } catch (err) {
+    console.error('Delivery upload error:', err);
+    res.status(500).json({ error: err.message || 'Error al subir fotos' });
+  }
+});
+
+// DELETE /:id/delivery/photos/:photoId
+router.delete('/:id/delivery/photos/:photoId', async (req, res) => {
+  try {
+    const gallery = await Gallery.findById(req.params.id);
+    if (!gallery) return res.status(404).json({ error: 'Galería no encontrada' });
+    const photo = gallery.deliveryPhotos.id(req.params.photoId);
+    if (!photo) return res.status(404).json({ error: 'Foto no encontrada' });
+    await deleteImage(photo.publicId);
+    photo.deleteOne();
+    await gallery.save();
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al eliminar foto' });
+  }
+});
+
+// PATCH /:id/delivery/password
+router.patch('/:id/delivery/password', async (req, res) => {
+  try {
+    const gallery = await Gallery.findById(req.params.id);
+    if (!gallery) return res.status(404).json({ error: 'Galería no encontrada' });
+    const { password } = req.body;
+    if (password && password.trim()) {
+      gallery.deliveryPasswordHash = await bcrypt.hash(password.trim(), 10);
+      gallery.hasDeliveryPassword = true;
+    } else {
+      gallery.deliveryPasswordHash = null;
+      gallery.hasDeliveryPassword = false;
+    }
+    await gallery.save();
+    res.json(galleryToJSON(gallery));
+  } catch { res.status(500).json({ error: 'Error del servidor' }); }
+});
+
+// GET /:id/delivery/zip — stream zip of all delivery photos
+router.get('/:id/delivery/zip', async (req, res) => {
+  try {
+    const gallery = await Gallery.findById(req.params.id).lean();
+    if (!gallery || !gallery.deliveryPhotos?.length)
+      return res.status(404).json({ error: 'No hay fotos de entrega' });
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${gallery.name}-entrega.zip"`);
+
+    const archive = archiver('zip', { zlib: { level: 6 } });
+    archive.pipe(res);
+
+    for (const photo of gallery.deliveryPhotos) {
+      await new Promise((resolve, reject) => {
+        const url = new URL(photo.url);
+        const lib = url.protocol === 'https:' ? https : http;
+        lib.get(photo.url, stream => {
+          archive.append(stream, { name: photo.originalName });
+          stream.on('end', resolve);
+          stream.on('error', reject);
+        }).on('error', reject);
+      });
+    }
+
+    await archive.finalize();
+  } catch (err) {
+    console.error(err);
+    if (!res.headersSent) res.status(500).json({ error: 'Error al generar zip' });
+  }
 });
 
 module.exports = router;

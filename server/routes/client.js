@@ -113,4 +113,36 @@ router.post('/:slug/selection', authenticateGallery, async (req, res) => {
   }
 });
 
+// POST /:slug/delivery/access — validate delivery password
+router.post('/:slug/delivery/access', async (req, res) => {
+  try {
+    const g = await Gallery.findOne({ slug: req.params.slug }).lean();
+    if (!g) return res.status(404).json({ error: 'Galería no encontrada' });
+    if (!g.hasDeliveryPassword) return res.json({ ok: true });
+    const { password } = req.body;
+    if (!password) return res.status(401).json({ error: 'Contraseña requerida' });
+    const valid = await bcrypt.compare(password, g.deliveryPasswordHash);
+    if (!valid) return res.status(401).json({ error: 'Contraseña incorrecta' });
+    res.json({ ok: true });
+  } catch { res.status(500).json({ error: 'Error del servidor' }); }
+});
+
+// GET /:slug/delivery — public delivery info + photos
+router.get('/:slug/delivery', async (req, res) => {
+  try {
+    const g = await Gallery.findOne({ slug: req.params.slug }).lean();
+    if (!g) return res.status(404).json({ error: 'Galería no encontrada' });
+    res.json({
+      id:                  g._id.toString(),
+      name:                g.name,
+      clientName:          g.clientName,
+      hasDeliveryPassword: g.hasDeliveryPassword || false,
+      photoCount:          (g.deliveryPhotos || []).length,
+      photos:              (g.deliveryPhotos || [])
+        .sort((a, b) => a.order - b.order)
+        .map(p => ({ id: p._id.toString(), originalName: p.originalName, url: p.url }))
+    });
+  } catch { res.status(500).json({ error: 'Error del servidor' }); }
+});
+
 module.exports = router;

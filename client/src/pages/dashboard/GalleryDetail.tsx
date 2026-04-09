@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Trash2, Copy, Check, ExternalLink, ChevronDown, ChevronUp, X, ImageOff } from 'lucide-react';
+import { ArrowLeft, Upload, Trash2, Copy, Check, ExternalLink, ChevronDown, ChevronUp, X, ImageOff, PackageOpen } from 'lucide-react';
 import Navbar from '../../components/layout/Navbar';
 import { api, getApiError } from '../../utils/api';
 import { Gallery, Selection } from '../../types';
@@ -456,6 +456,122 @@ export default function GalleryDetail() {
             </div>
           )}
         </div>
+
+        {/* ── Galería de entrega ── */}
+        <DeliverySection gallery={gallery} id={id!} onUpdate={setGallery} />
+
+      </div>
+    </div>
+  );
+}
+
+const BASE = (import.meta.env.VITE_API_URL as string) || '';
+
+function DeliverySection({ gallery, id, onUpdate }: { gallery: Gallery; id: string; onUpdate: (g: Gallery) => void }) {
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const deliveryUrl = `${window.location.origin}/g/${gallery.slug}/entrega`;
+  const [copied, setCopied] = useState(false);
+
+  const copyLink = async () => {
+    await navigator.clipboard.writeText(deliveryUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+
+  const uploadDelivery = async (files: FileList | File[]) => {
+    if (!files.length) return;
+    setUploading(true);
+    setProgress(0);
+    try {
+      const formData = new FormData();
+      Array.from(files).forEach(f => formData.append('photos', f));
+      const res = await api.post(`/galleries/${id}/delivery/photos`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: e => { if (e.total) setProgress(Math.round(e.loaded * 100 / e.total)); }
+      });
+      onUpdate({ ...gallery, deliveryPhotos: [...(gallery.deliveryPhotos || []), ...res.data] });
+    } catch (err) { alert(getApiError(err)); }
+    finally { setUploading(false); setProgress(0); }
+  };
+
+  const deletePhoto = async (photoId: string) => {
+    if (!confirm('¿Eliminar esta foto de la entrega?')) return;
+    setDeleting(photoId);
+    try {
+      await api.delete(`/galleries/${id}/delivery/photos/${photoId}`);
+      onUpdate({ ...gallery, deliveryPhotos: gallery.deliveryPhotos.filter(p => p.id !== photoId) });
+    } catch (err) { alert(getApiError(err)); }
+    finally { setDeleting(null); }
+  };
+
+  return (
+    <div className="card mt-6">
+      <div className="flex items-center gap-2 mb-4">
+        <PackageOpen size={18} className="text-gray-500 dark:text-zinc-400" />
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Galería de entrega</h2>
+        <span className="text-xs text-gray-400 dark:text-zinc-500 ml-auto">{gallery.deliveryPhotos?.length || 0} fotos</span>
+      </div>
+
+      {/* Link de entrega */}
+      {(gallery.deliveryPhotos?.length || 0) > 0 && (
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-5">
+          <div className="flex-1 bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-gray-600 dark:text-gray-300 font-mono truncate">
+            {deliveryUrl}
+          </div>
+          <div className="flex gap-2">
+            <button onClick={copyLink} className={`btn-secondary text-sm px-4 py-2 flex items-center gap-1.5 ${copied ? 'text-emerald-600' : ''}`}>
+              {copied ? <><Check size={14} /> Copiado</> : <><Copy size={14} /> Copiar</>}
+            </button>
+            <a href={`${BASE}/api/galleries/${id}/delivery/zip`} download className="btn-secondary text-sm px-4 py-2 flex items-center gap-1.5">
+              Descargar ZIP
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* Grid de fotos */}
+      {(gallery.deliveryPhotos?.length || 0) > 0 && (
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mb-5">
+          {gallery.deliveryPhotos.map(photo => (
+            <div key={photo.id} className="group relative aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-zinc-800">
+              <img src={photo.url} alt={photo.originalName} className="w-full h-full object-cover" loading="lazy" />
+              <button
+                onClick={() => deletePhoto(photo.id)}
+                disabled={deleting === photo.id}
+                className="absolute top-1 right-1 p-1 rounded-md bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+              >
+                {deleting === photo.id ? <div className="w-3 h-3 border border-white/50 border-t-white rounded-full animate-spin" /> : <X size={12} />}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Upload zone */}
+      <div
+        className="border-2 border-dashed border-gray-200 dark:border-zinc-700 rounded-xl p-6 text-center cursor-pointer hover:border-gray-400 dark:hover:border-zinc-500 transition-colors"
+        onClick={() => fileRef.current?.click()}
+        onDragOver={e => e.preventDefault()}
+        onDrop={e => { e.preventDefault(); uploadDelivery(e.dataTransfer.files); }}
+      >
+        <input ref={fileRef} type="file" multiple accept="image/*" className="hidden" onChange={e => e.target.files && uploadDelivery(e.target.files)} />
+        {uploading ? (
+          <div className="space-y-2">
+            <div className="w-full bg-gray-100 dark:bg-zinc-800 rounded-full h-1.5">
+              <div className="bg-gray-900 dark:bg-white h-1.5 rounded-full transition-all" style={{ width: `${progress}%` }} />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-zinc-400">Subiendo... {progress}%</p>
+          </div>
+        ) : (
+          <>
+            <Upload size={20} className="mx-auto text-gray-300 dark:text-zinc-600 mb-2" />
+            <p className="text-sm text-gray-500 dark:text-zinc-400">Subir fotos de entrega</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-600 mt-1">Arrastrá o hacé click · Se comprimen automáticamente</p>
+          </>
+        )}
       </div>
     </div>
   );

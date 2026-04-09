@@ -9,6 +9,8 @@ import GalleryDetail from './pages/dashboard/GalleryDetail';
 import GalleryEntry from './pages/gallery/GalleryEntry';
 import GalleryView from './pages/gallery/GalleryView';
 import Success from './pages/gallery/Success';
+import DeliveryEntry from './pages/gallery/DeliveryEntry';
+import DeliveryView from './pages/gallery/DeliveryView';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -30,6 +32,8 @@ function App() {
             <Route path="/g/:slug" element={<GalleryEntry />} />
             <Route path="/g/:slug/view" element={<GalleryView />} />
             <Route path="/g/:slug/success" element={<Success />} />
+            <Route path="/g/:slug/entrega" element={<DeliveryEntry />} />
+            <Route path="/g/:slug/entrega/view" element={<DeliveryView />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>

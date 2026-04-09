@@ -16,7 +16,18 @@ export interface Gallery {
   status: 'active' | 'closed';
   selectionMode: 'single' | 'multiple';
   isFinalized: boolean;
+  hasDeliveryPassword: boolean;
   createdAt: string;
+  photos: Photo[];
+  deliveryPhotos: Photo[];
+}
+
+export interface DeliveryInfo {
+  id: string;
+  name: string;
+  clientName: string;
+  hasDeliveryPassword: boolean;
+  photoCount: number;
   photos: Photo[];
 }
 
