@@ -143,7 +143,7 @@ export default function Lightbox({
       <div
         ref={containerRef}
         className="relative w-full h-full flex items-center justify-center"
-        style={{ touchAction: 'pan-y pinch-zoom' }}
+        style={{ touchAction: 'none' }}
       >
         <button
           onClick={onClose}
