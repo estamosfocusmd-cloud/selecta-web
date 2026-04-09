@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Camera } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { api, getApiError } from '../../utils/api';
+import Logo from '../../components/brand/Logo';
 
 export default function Register() {
   const { isDark } = useTheme();
@@ -62,11 +63,8 @@ export default function Register() {
 
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 mb-4">
-            <div className="w-9 h-9 rounded-xl bg-gray-900 dark:bg-white flex items-center justify-center">
-              <Camera size={18} className="text-white dark:text-gray-900" />
-            </div>
-            <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Selecta</span>
+          <Link to="/" className="inline-block mb-5">
+            <Logo variant="auto" size="lg" />
           </Link>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Creá tu cuenta</h1>
           <p className="text-sm text-gray-500 dark:text-zinc-400 leading-relaxed">

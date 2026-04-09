@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Moon, Sun, ArrowRight, Image, Lock, Share2, CheckSquare } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
+import Logo from '../components/brand/Logo';
 
 export default function Landing() {
   const { isDark, toggleTheme } = useTheme();
@@ -11,7 +12,7 @@ export default function Landing() {
     <div className="min-h-screen bg-white dark:bg-zinc-950 flex flex-col">
       <header className="border-b border-gray-100 dark:border-zinc-900">
         <div className="max-w-screen-lg mx-auto px-6 h-16 flex items-center justify-between">
-          <span className="text-xl font-bold tracking-tight">Selecta</span>
+          <Logo variant="auto" size="md" />
           <div className="flex items-center gap-2">
             <button onClick={toggleTheme} className="btn-ghost p-2">
               {isDark ? <Sun size={16} /> : <Moon size={16} />}
@@ -30,7 +31,7 @@ export default function Landing() {
       <main className="flex-1">
         <section className="max-w-screen-lg mx-auto px-6 pt-24 pb-20 text-center">
           <div className="inline-flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-zinc-400 bg-gray-100 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-full px-3 py-1.5 mb-8">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse" />
             Para fotógrafos profesionales
           </div>
 
@@ -81,8 +82,8 @@ export default function Landing() {
                 desc: 'Genera un enlace único al instante y compártelo por cualquier medio.'
               }
             ].map((f, i) => (
-              <div key={i} className="group p-6 rounded-2xl border border-gray-100 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-600 transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-600 dark:text-gray-400 mb-4 group-hover:bg-gray-900 dark:group-hover:bg-white group-hover:text-white dark:group-hover:text-gray-900 transition-colors">
+              <div key={i} className="group p-6 rounded-2xl border border-gray-100 dark:border-zinc-800 hover:border-brand-500/40 dark:hover:border-brand-500/30 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-zinc-800 flex items-center justify-center text-gray-600 dark:text-gray-400 mb-4 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                   {f.icon}
                 </div>
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-2">{f.title}</h3>
@@ -93,14 +94,14 @@ export default function Landing() {
         </section>
 
         <section className="max-w-screen-lg mx-auto px-6 py-20">
-          <div className="rounded-3xl bg-gray-900 dark:bg-white p-10 sm:p-16 text-center">
-            <h2 className="text-3xl font-bold text-white dark:text-gray-900 mb-4">
-              Listo para empezar
+          <div className="rounded-3xl bg-brand-dark p-10 sm:p-16 text-center">
+            <h2 className="text-3xl font-bold text-white mb-4">
+              Seleccioná. Confirmá. Listo.
             </h2>
-            <p className="text-gray-400 dark:text-gray-600 mb-8 max-w-sm mx-auto">
+            <p className="text-brand-200 mb-8 max-w-sm mx-auto">
               Crea tu primera galería en menos de un minuto.
             </p>
-            <Link to={isAuthenticated ? '/dashboard' : '/login'} className="inline-flex items-center gap-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-6 py-3 rounded-xl font-medium text-sm hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
+            <Link to={isAuthenticated ? '/dashboard' : '/login'} className="inline-flex items-center gap-2 bg-brand-500 text-white px-6 py-3 rounded-xl font-medium text-sm hover:bg-brand-600 transition-colors">
               {isAuthenticated ? 'Ir al panel' : 'Crear cuenta'}
               <ArrowRight size={14} />
             </Link>
@@ -110,7 +111,7 @@ export default function Landing() {
 
       <footer className="border-t border-gray-100 dark:border-zinc-900 py-8">
         <div className="max-w-screen-lg mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="text-sm font-semibold tracking-tight">Selecta</span>
+          <Logo variant="auto" size="sm" />
           <p className="text-xs text-gray-400 dark:text-zinc-600">
             © {new Date().getFullYear()} Selecta. Galerías privadas para fotógrafos.
           </p>

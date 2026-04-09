@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { api, getApiError } from '../../utils/api';
+import Logo from '../../components/brand/Logo';
 
 export default function ForgotPassword() {
   const [email, setEmail]     = useState('');
@@ -54,6 +55,9 @@ export default function ForgotPassword() {
         </Link>
 
         <div className="mb-8">
+          <Link to="/" className="inline-block mb-5">
+            <Logo variant="auto" size="md" />
+          </Link>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Olvidé mi contraseña</h1>
           <p className="text-sm text-gray-500 dark:text-zinc-400">
             Ingresá tu email y te enviamos un link para crear una nueva contraseña.

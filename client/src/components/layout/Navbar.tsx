@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Moon, Sun, LogOut, LayoutDashboard, Plus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import Logo from '../brand/Logo';
 
 interface NavbarProps {
   variant?: 'dashboard' | 'gallery' | 'minimal';
@@ -22,8 +23,8 @@ export default function Navbar({ variant = 'dashboard', galleryName }: NavbarPro
     <header className="sticky top-0 z-40 border-b border-gray-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl">
       <div className="max-w-screen-xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4 min-w-0">
-          <Link to={isAuthenticated ? '/dashboard' : '/'} className="text-lg font-bold tracking-tight text-gray-900 dark:text-white shrink-0">
-            Selecta
+          <Link to={isAuthenticated ? '/dashboard' : '/'} className="shrink-0">
+            <Logo variant="auto" size="sm" />
           </Link>
           {variant === 'gallery' && galleryName && (
             <>
@@ -63,7 +64,7 @@ export default function Navbar({ variant = 'dashboard', galleryName }: NavbarPro
 
           {variant === 'dashboard' && isAuthenticated && user && (
             <div className="hidden sm:flex items-center gap-2 ml-2 pl-2 border-l border-gray-200 dark:border-zinc-700">
-              <div className="w-7 h-7 rounded-full bg-gray-900 dark:bg-white flex items-center justify-center">
+              <div className="w-7 h-7 rounded-full bg-brand-500 flex items-center justify-center">
                 <span className="text-xs font-bold text-white dark:text-gray-900">
                   {user.name.charAt(0).toUpperCase()}
                 </span>
