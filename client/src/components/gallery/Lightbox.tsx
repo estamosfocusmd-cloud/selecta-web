@@ -27,11 +27,23 @@ export default function Lightbox({
   const [visible, setVisible] = useState(true);
   const [dir, setDir] = useState<'left' | 'right' | null>(null);
   const isAnimating = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Refs so DOM listeners always see fresh state without re-registering
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const isSwiping = useRef<boolean | null>(null); // null=undecided, true=horizontal, false=vertical
+  const hasPrevRef = useRef(hasPrev);
+  const hasNextRef = useRef(hasNext);
+  const currentIndexRef = useRef(currentIndex);
+  hasPrevRef.current = hasPrev;
+  hasNextRef.current = hasNext;
+  currentIndexRef.current = currentIndex;
 
   const navigate = useCallback((index: number) => {
     if (isAnimating.current) return;
     isAnimating.current = true;
-    setDir(index > currentIndex ? 'left' : 'right');
+    setDir(index > currentIndexRef.current ? 'left' : 'right');
     setVisible(false);
     setTimeout(() => {
       onNavigate(index);
@@ -39,11 +51,62 @@ export default function Lightbox({
       setVisible(true);
       isAnimating.current = false;
     }, 180);
-  }, [currentIndex, onNavigate]);
+  }, [onNavigate]);
 
-  const touchStartX = useRef(0);
-  const touchStartY = useRef(0);
-  const touchMoved = useRef(false);
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  // Non-passive touch listeners — required to call preventDefault on iOS Safari
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const onStart = (e: TouchEvent) => {
+      touchStartX.current = e.touches[0].clientX;
+      touchStartY.current = e.touches[0].clientY;
+      isSwiping.current = null;
+    };
+
+    const onMove = (e: TouchEvent) => {
+      const dx = e.touches[0].clientX - touchStartX.current;
+      const dy = e.touches[0].clientY - touchStartY.current;
+      if (isSwiping.current === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+        isSwiping.current = Math.abs(dx) > Math.abs(dy);
+      }
+      // Block browser scroll only during a horizontal swipe
+      if (isSwiping.current === true) {
+        e.preventDefault();
+      }
+    };
+
+    const onEnd = (e: TouchEvent) => {
+      const dx = e.changedTouches[0].clientX - touchStartX.current;
+      const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+      const absDx = Math.abs(dx);
+
+      if (isSwiping.current === true && absDx > 50 && dy < 120) {
+        if (dx > 0 && hasPrevRef.current) {
+          navigateRef.current(currentIndexRef.current - 1);
+        } else if (dx < 0 && hasNextRef.current) {
+          navigateRef.current(currentIndexRef.current + 1);
+        }
+      } else if (absDx < 10 && dy < 10) {
+        onCloseRef.current();
+      }
+      isSwiping.current = null;
+    };
+
+    el.addEventListener('touchstart', onStart, { passive: true });
+    el.addEventListener('touchmove', onMove, { passive: false });
+    el.addEventListener('touchend', onEnd, { passive: true });
+    return () => {
+      el.removeEventListener('touchstart', onStart);
+      el.removeEventListener('touchmove', onMove);
+      el.removeEventListener('touchend', onEnd);
+    };
+  }, []); // mount/unmount only — state accessed via refs
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') onClose();
@@ -60,29 +123,6 @@ export default function Lightbox({
       document.body.style.overflow = '';
     };
   }, [handleKeyDown]);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
-    touchMoved.current = false;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
-    const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
-    if (dx > 10 || dy > 10) touchMoved.current = true;
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
-    if (Math.abs(dx) > 60 && dy < 100) {
-      if (dx > 0 && hasPrev) navigate(currentIndex - 1);
-      else if (dx < 0 && hasNext) navigate(currentIndex + 1);
-    } else if (!touchMoved.current) {
-      onClose();
-    }
-  };
 
   // Preload adjacent images
   useEffect(() => {
@@ -101,10 +141,9 @@ export default function Lightbox({
   return (
     <div className="fixed inset-0 z-50 bg-black/96 flex items-center justify-center animate-fade-in select-none">
       <div
+        ref={containerRef}
         className="relative w-full h-full flex items-center justify-center"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+        style={{ touchAction: 'pan-y pinch-zoom' }}
       >
         <button
           onClick={onClose}
@@ -123,17 +162,18 @@ export default function Lightbox({
           onClick={() => onToggleSelect(photo.id)}
           className={`absolute top-3 right-16 z-20 flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-all min-h-[44px] ${
             isSelected
-              ? 'bg-emerald-500 text-white'
+              ? 'bg-brand-500 text-white'
               : 'bg-white/10 text-white active:bg-white/20'
           }`}
         >
           {isSelected ? <><Check size={15} strokeWidth={2.5} /><span>Seleccionada</span></> : <span>Seleccionar</span>}
         </button>
 
+        {/* Nav buttons hidden on mobile — swipe handles navigation there */}
         {hasPrev && (
           <button
             onClick={() => navigate(currentIndex - 1)}
-            className="absolute left-2 z-20 w-11 h-11 rounded-full bg-white/10 active:bg-white/30 text-white flex items-center justify-center transition-colors"
+            className="absolute left-2 z-20 w-11 h-11 rounded-full bg-white/10 active:bg-white/30 text-white items-center justify-center transition-colors hidden sm:flex"
           >
             <ChevronLeft size={22} />
           </button>
@@ -142,7 +182,7 @@ export default function Lightbox({
         {hasNext && (
           <button
             onClick={() => navigate(currentIndex + 1)}
-            className="absolute right-2 z-20 w-11 h-11 rounded-full bg-white/10 active:bg-white/30 text-white flex items-center justify-center transition-colors"
+            className="absolute right-2 z-20 w-11 h-11 rounded-full bg-white/10 active:bg-white/30 text-white items-center justify-center transition-colors hidden sm:flex"
           >
             <ChevronRight size={22} />
           </button>
@@ -154,10 +194,17 @@ export default function Lightbox({
           alt={photo.originalName}
           style={{
             opacity: visible ? 1 : 0,
-            transform: visible ? 'translateX(0)' : dir === 'left' ? 'translateX(-32px)' : dir === 'right' ? 'translateX(32px)' : 'translateX(0)',
+            transform: visible
+              ? 'translateX(0)'
+              : dir === 'left'
+              ? 'translateX(-32px)'
+              : dir === 'right'
+              ? 'translateX(32px)'
+              : 'translateX(0)',
             transition: 'opacity 0.18s ease, transform 0.18s ease',
+            pointerEvents: 'none',
           }}
-          className="max-w-full max-h-full object-contain rounded-sm px-14"
+          className="max-w-full max-h-full object-contain rounded-sm px-4 sm:px-14"
           draggable={false}
           decoding="async"
         />
