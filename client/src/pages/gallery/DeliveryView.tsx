@@ -30,7 +30,7 @@ export default function DeliveryView() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await clientApi.get(`/${slug}/delivery`);
+        const res = await clientApi.get(`/g/${slug}/delivery`);
         setInfo(res.data);
       } catch (err) {
         setError(getApiError(err));

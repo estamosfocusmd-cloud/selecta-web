@@ -19,7 +19,7 @@ export default function DeliveryEntry() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await clientApi.get(`/${slug}/delivery`);
+        const res = await clientApi.get(`/g/${slug}/delivery`);
         const data: DeliveryInfo = res.data;
         setInfo(data);
         if (!data.hasDeliveryPassword) {
@@ -40,7 +40,7 @@ export default function DeliveryEntry() {
     setSubmitting(true);
     setError('');
     try {
-      await clientApi.post(`/${slug}/delivery/access`, { password });
+      await clientApi.post(`/g/${slug}/delivery/access`, { password });
       sessionStorage.setItem(`selecta_delivery_auth_${slug}`, '1');
       navigate(`/g/${slug}/entrega/view`, { replace: true });
     } catch (err) {
