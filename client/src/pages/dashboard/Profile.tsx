@@ -5,6 +5,37 @@ import Navbar from '../../components/layout/Navbar';
 import { useAuth } from '../../contexts/AuthContext';
 import { api, getApiError } from '../../utils/api';
 
+async function compressImage(file: File, maxSizeMB = 5): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement('canvas');
+      let { width, height } = img;
+      const MAX_DIM = 2000;
+      if (width > MAX_DIM || height > MAX_DIM) {
+        if (width > height) { height = Math.round(height * MAX_DIM / width); width = MAX_DIM; }
+        else { width = Math.round(width * MAX_DIM / height); height = MAX_DIM; }
+      }
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+      let quality = 0.85;
+      const tryCompress = () => {
+        canvas.toBlob(blob => {
+          if (!blob) return resolve(file);
+          if (blob.size <= maxSizeMB * 1024 * 1024 || quality <= 0.3)
+            resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }));
+          else { quality -= 0.1; tryCompress(); }
+        }, 'image/jpeg', quality);
+      };
+      tryCompress();
+    };
+    img.onerror = () => resolve(file);
+    img.src = url;
+  });
+}
+
 export default function Profile() {
   const { user, updateUser } = useAuth();
   const [form, setForm] = useState({
@@ -53,8 +84,9 @@ export default function Profile() {
   const handlePhotoUpload = async (file: File) => {
     setUploading(true);
     try {
+      const compressed = await compressImage(file, 5);
       const formData = new FormData();
-      formData.append('photo', file);
+      formData.append('photo', compressed);
       const res = await api.post('/users/profile/photo', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });

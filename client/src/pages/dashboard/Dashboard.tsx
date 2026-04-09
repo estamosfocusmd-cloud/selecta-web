@@ -50,7 +50,6 @@ export default function Dashboard() {
   });
 
   const displayName = user?.brandName || user?.name || 'Fotógrafo';
-  const firstName   = displayName.split(' ')[0];
   const initials    = displayName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
@@ -73,7 +72,7 @@ export default function Dashboard() {
             </Link>
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                Hola, {firstName} 👋
+                Hola, {displayName}
               </h1>
               <p className="text-sm text-gray-500 dark:text-zinc-400 mt-0.5">
                 {galleries.length === 0 ? 'Sin galerías aún' : `${galleries.length} galería${galleries.length !== 1 ? 's' : ''}`}
