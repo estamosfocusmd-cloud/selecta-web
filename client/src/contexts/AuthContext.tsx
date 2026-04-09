@@ -1,5 +1,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import axios from 'axios';
 import { User } from '../types';
+
+const BASE = (import.meta.env.VITE_API_URL as string) || 'https://selecta-web.onrender.com';
 
 interface AuthContextType {
   user: User | null;
@@ -20,17 +23,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const storedToken = localStorage.getItem('selecta_token');
-    const storedUser  = localStorage.getItem('selecta_user');
-    if (storedToken && storedUser) {
-      try {
+    if (!storedToken) {
+      setIsLoading(false);
+      return;
+    }
+    // Validate token with backend
+    axios.get(`${BASE}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${storedToken}` }
+    })
+      .then(res => {
         setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-      } catch {
+        setUser(res.data);
+        localStorage.setItem('selecta_user', JSON.stringify(res.data));
+      })
+      .catch(() => {
         localStorage.removeItem('selecta_token');
         localStorage.removeItem('selecta_user');
-      }
-    }
-    setIsLoading(false);
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
   function login(token: string, user: User) {
