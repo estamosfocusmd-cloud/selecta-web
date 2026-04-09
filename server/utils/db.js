@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const bcrypt   = require('bcryptjs');
 
 async function connectDB() {
   const uri = process.env.MONGODB_URI;
@@ -14,9 +14,20 @@ async function initAdmin() {
   if (count === 0) {
     const username = process.env.ADMIN_USERNAME || 'admin';
     const password = process.env.ADMIN_PASSWORD || 'selecta123';
-    const hash = await bcrypt.hash(password, 10);
-    await User.create({ username, name: 'Fotógrafo', password: hash });
+    const email    = process.env.ADMIN_EMAIL    || 'admin@selecta.app';
+    const hash     = await bcrypt.hash(password, 10);
+    await User.create({ username, name: 'Administrador', email, password: hash, verified: true });
     console.log(`  Usuario admin creado: ${username}`);
+  } else {
+    // Asegurar que el admin existente tenga email y verified
+    await User.updateMany(
+      { verified: { $exists: false } },
+      { $set: { verified: true } }
+    );
+    await User.updateMany(
+      { email: { $exists: false } },
+      { $set: { email: process.env.ADMIN_EMAIL || 'admin@selecta.app' } }
+    );
   }
 }
 

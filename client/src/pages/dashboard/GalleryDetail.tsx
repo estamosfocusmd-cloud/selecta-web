@@ -486,8 +486,9 @@ function DeliverySection({ gallery, id, onUpdate }: { gallery: Gallery; id: stri
     setUploading(true);
     setProgress(0);
     try {
+      const compressed = await Promise.all(Array.from(files).map(f => compressImage(f, 6)));
       const formData = new FormData();
-      Array.from(files).forEach(f => formData.append('photos', f));
+      compressed.forEach(f => formData.append('photos', f));
       const res = await api.post(`/galleries/${id}/delivery/photos`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: e => { if (e.total) setProgress(Math.round(e.loaded * 100 / e.total)); }

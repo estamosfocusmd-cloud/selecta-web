@@ -3,9 +3,14 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Landing from './pages/Landing';
 import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import VerifyEmail from './pages/auth/VerifyEmail';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 import Dashboard from './pages/dashboard/Dashboard';
 import NewGallery from './pages/dashboard/NewGallery';
 import GalleryDetail from './pages/dashboard/GalleryDetail';
+import Profile from './pages/dashboard/Profile';
 import GalleryEntry from './pages/gallery/GalleryEntry';
 import GalleryView from './pages/gallery/GalleryView';
 import Success from './pages/gallery/Success';
@@ -26,9 +31,14 @@ function App() {
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/dashboard/gallery/new" element={<ProtectedRoute><NewGallery /></ProtectedRoute>} />
             <Route path="/dashboard/gallery/:id" element={<ProtectedRoute><GalleryDetail /></ProtectedRoute>} />
+            <Route path="/dashboard/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/g/:slug" element={<GalleryEntry />} />
             <Route path="/g/:slug/view" element={<GalleryView />} />
             <Route path="/g/:slug/success" element={<Success />} />

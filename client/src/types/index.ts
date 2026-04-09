@@ -57,5 +57,13 @@ export interface Selection {
 export interface User {
   id: string;
   username: string;
+  email: string;
   name: string;
+  verified: boolean;
+  brandName: string;
+  bio: string;
+  profileImage: string | null;
+  location: string;
+  socialLink: string;
+  slug: string;
 }

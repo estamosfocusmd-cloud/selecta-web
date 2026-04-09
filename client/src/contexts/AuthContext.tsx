@@ -6,18 +6,19 @@ interface AuthContextType {
   token: string | null;
   login: (token: string, user: User) => void;
   logout: () => void;
+  updateUser: (partial: Partial<User>) => void;
   isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser]   = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
     const storedToken = localStorage.getItem('selecta_token');
-    const storedUser = localStorage.getItem('selecta_user');
+    const storedUser  = localStorage.getItem('selecta_user');
     if (storedToken && storedUser) {
       try {
         setToken(storedToken);
@@ -43,8 +44,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('selecta_user');
   }
 
+  function updateUser(partial: Partial<User>) {
+    setUser(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...partial };
+      localStorage.setItem('selecta_user', JSON.stringify(updated));
+      return updated;
+    });
+  }
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={{ user, token, login, logout, updateUser, isAuthenticated: !!token }}>
       {children}
     </AuthContext.Provider>
   );

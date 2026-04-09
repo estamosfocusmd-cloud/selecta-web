@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Image, Clock, CheckCircle2, ExternalLink, Trash2, Copy, Check } from 'lucide-react';
+import { Plus, Image, Clock, CheckCircle2, ExternalLink, Trash2, Copy, Check, UserCircle } from 'lucide-react';
 import Navbar from '../../components/layout/Navbar';
+import { useAuth } from '../../contexts/AuthContext';
 import { api, getApiError } from '../../utils/api';
 import { Gallery } from '../../types';
 
@@ -20,6 +21,7 @@ function CopyButton({ text }: { text: string }) {
 }
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const [galleries, setGalleries] = useState<Gallery[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -47,21 +49,47 @@ export default function Dashboard() {
     day: 'numeric', month: 'short', year: 'numeric'
   });
 
+  const displayName = user?.brandName || user?.name || 'Fotógrafo';
+  const firstName   = displayName.split(' ')[0];
+  const initials    = displayName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
       <Navbar variant="dashboard" />
 
       <div className="max-w-screen-xl mx-auto px-4 sm:px-6 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Mis galerías</h1>
-            <p className="text-sm text-gray-500 dark:text-zinc-400 mt-0.5">
-              {galleries.length === 0 ? 'Sin galerías aún' : `${galleries.length} galería${galleries.length !== 1 ? 's' : ''}`}
-            </p>
+
+        {/* Bienvenida personalizada */}
+        <div className="flex items-center justify-between mb-8 gap-4">
+          <div className="flex items-center gap-4">
+            <Link to="/dashboard/profile" className="shrink-0">
+              {user?.profileImage ? (
+                <img src={user.profileImage} alt="Perfil" className="w-12 h-12 rounded-xl object-cover hover:opacity-90 transition-opacity" />
+              ) : (
+                <div className="w-12 h-12 rounded-xl bg-gray-200 dark:bg-zinc-800 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-zinc-700 transition-colors">
+                  <span className="text-base font-bold text-gray-500 dark:text-zinc-400">{initials}</span>
+                </div>
+              )}
+            </Link>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                Hola, {firstName} 👋
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 mt-0.5">
+                {galleries.length === 0 ? 'Sin galerías aún' : `${galleries.length} galería${galleries.length !== 1 ? 's' : ''}`}
+              </p>
+            </div>
           </div>
-          <Link to="/dashboard/gallery/new" className="btn-primary sm:hidden">
-            <Plus size={16} />
-          </Link>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link to="/dashboard/profile" className="btn-secondary hidden sm:inline-flex items-center gap-1.5 text-sm px-3 py-2">
+              <UserCircle size={15} />
+              Perfil
+            </Link>
+            <Link to="/dashboard/gallery/new" className="btn-primary">
+              <Plus size={16} />
+              <span className="hidden sm:inline">Nueva galería</span>
+            </Link>
+          </div>
         </div>
 
         {loading && (
