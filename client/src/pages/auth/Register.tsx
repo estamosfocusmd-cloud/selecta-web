@@ -12,7 +12,7 @@ export default function Register() {
   const [showPass, setShowPass]   = useState(false);
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState('');
-  const [success, setSuccess]     = useState(false);
+  const [autoVerified, setAutoVerified] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
@@ -23,11 +23,12 @@ export default function Register() {
     setLoading(true);
     setError('');
     try {
-      await api.post('/auth/register', {
+      const res = await api.post('/auth/register', {
         name:     form.name.trim(),
         email:    form.email.trim(),
         password: form.password
       });
+      setAutoVerified(!!res.data.autoVerified);
       setSuccess(true);
     } catch (err) {
       setError(getApiError(err));
@@ -44,15 +45,19 @@ export default function Register() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">¡Ya casi está!</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+          {autoVerified ? '¡Cuenta creada!' : '¡Ya casi está!'}
+        </h1>
         <p className="text-gray-500 dark:text-zinc-400 mb-6 leading-relaxed">
-          Te enviamos un email a <strong className="text-gray-900 dark:text-white">{form.email}</strong>.<br />
-          Hacé click en el link para verificar tu cuenta.
+          {autoVerified
+            ? 'Tu cuenta está lista. Ya podés iniciar sesión.'
+            : <>Te enviamos un email a <strong className="text-gray-900 dark:text-white">{form.email}</strong>.<br />Hacé click en el link para verificar tu cuenta.</>
+          }
         </p>
         <Link to="/login" className="btn-primary px-6 py-3 inline-flex">
           Ir al login
         </Link>
-        <p className="text-xs text-gray-400 dark:text-zinc-600 mt-4">¿No llegó? Revisá tu carpeta de spam.</p>
+        {!autoVerified && <p className="text-xs text-gray-400 dark:text-zinc-600 mt-4">¿No llegó? Revisá tu carpeta de spam.</p>}
       </div>
     </div>
   );

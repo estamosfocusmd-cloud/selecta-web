@@ -42,22 +42,29 @@ router.post('/register', async (req, res) => {
     const token = crypto.randomBytes(32).toString('hex');
     const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
+    const emailsEnabled = !!process.env.RESEND_API_KEY;
+
     const user = await User.create({
       name:                    name.trim(),
       email:                   email.toLowerCase().trim(),
       password:                hash,
-      verified:                false,
-      verificationToken:       token,
-      verificationTokenExpiry: expiry
+      verified:                !emailsEnabled, // auto-verify if email not configured
+      verificationToken:       emailsEnabled ? token : null,
+      verificationTokenExpiry: emailsEnabled ? expiry : null
     });
 
-    try {
-      await sendVerificationEmail(user.email, user.name, token);
-    } catch (emailErr) {
-      console.error('Email send error:', emailErr);
+    if (emailsEnabled) {
+      try {
+        await sendVerificationEmail(user.email, user.name, token);
+      } catch (emailErr) {
+        console.error('Email send error:', emailErr);
+      }
     }
 
-    res.status(201).json({ message: 'Cuenta creada. Revisá tu email para verificar tu cuenta.' });
+    const msg = emailsEnabled
+      ? 'Cuenta creada. Revisá tu email para verificar tu cuenta.'
+      : 'Cuenta creada. Ya podés iniciar sesión.';
+    res.status(201).json({ message: msg, autoVerified: !emailsEnabled });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error del servidor' });
