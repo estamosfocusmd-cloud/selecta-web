@@ -12,6 +12,7 @@ export default function Register() {
   const [showPass, setShowPass]   = useState(false);
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState('');
+  const [success, setSuccess]     = useState(false);
   const [autoVerified, setAutoVerified] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
