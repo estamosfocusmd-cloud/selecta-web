@@ -45,7 +45,7 @@ export default function Landing() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link to={isAuthenticated ? '/dashboard' : '/login'} className="btn-primary px-6 py-3 text-base w-full sm:w-auto">
+            <Link to={isAuthenticated ? '/dashboard' : '/register'} className="btn-primary px-6 py-3 text-base w-full sm:w-auto">
               {isAuthenticated ? 'Ir al panel' : 'Empezar gratis'}
               <ArrowRight size={16} />
             </Link>
@@ -101,7 +101,7 @@ export default function Landing() {
             <p className="text-brand-200 mb-8 max-w-sm mx-auto">
               Crea tu primera galería en menos de un minuto.
             </p>
-            <Link to={isAuthenticated ? '/dashboard' : '/login'} className="inline-flex items-center gap-2 bg-brand-500 text-white px-6 py-3 rounded-xl font-medium text-sm hover:bg-brand-600 transition-colors">
+            <Link to={isAuthenticated ? '/dashboard' : '/register'} className="inline-flex items-center gap-2 bg-brand-500 text-white px-6 py-3 rounded-xl font-medium text-sm hover:bg-brand-600 transition-colors">
               {isAuthenticated ? 'Ir al panel' : 'Crear cuenta'}
               <ArrowRight size={14} />
             </Link>
