@@ -66,8 +66,8 @@ router.post('/register', async (req, res) => {
       : 'Cuenta creada. Ya podés iniciar sesión.';
     res.status(201).json({ message: msg, autoVerified: !emailsEnabled });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error del servidor' });
+    console.error('[register error]', err);
+    res.status(500).json({ error: 'Error del servidor', detail: err.message });
   }
 });
 
