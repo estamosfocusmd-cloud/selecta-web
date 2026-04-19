@@ -39,12 +39,14 @@ router.post('/register', async (req, res) => {
     if (exists) return res.status(409).json({ error: 'Ya existe una cuenta con ese email' });
 
     const hash  = await bcrypt.hash(password, 10);
+    const autoUsername = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '') + '_' + Date.now().toString(36);
 
     const user = await User.create({
       name:     name.trim(),
       email:    email.toLowerCase().trim(),
       password: hash,
-      verified: true
+      verified: true,
+      username: autoUsername
     });
 
     res.status(201).json({ message: 'Cuenta creada. Ya podés iniciar sesión.', autoVerified: true });
