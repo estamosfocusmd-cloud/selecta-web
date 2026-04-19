@@ -32,7 +32,9 @@ clientApi.interceptors.request.use(config => {
 
 export const getApiError = (err: unknown): string => {
   if (axios.isAxiosError(err)) {
-    return err.response?.data?.error || err.message || 'Error desconocido';
+    const data = err.response?.data;
+    if (data?.detail) return `${data.error || 'Error'}: ${data.detail}`;
+    return data?.error || err.message || 'Error desconocido';
   }
   return 'Error desconocido';
 };
