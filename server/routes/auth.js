@@ -40,16 +40,34 @@ router.post('/register', async (req, res) => {
 
     const hash  = await bcrypt.hash(password, 10);
     const autoUsername = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '') + '_' + Date.now().toString(36);
+    const emailsEnabled = !!process.env.RESEND_API_KEY;
+    const verifyToken  = crypto.randomBytes(32).toString('hex');
+    const verifyExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     const user = await User.create({
-      name:     name.trim(),
-      email:    email.toLowerCase().trim(),
-      password: hash,
-      verified: true,
-      username: autoUsername
+      name:                    name.trim(),
+      email:                   email.toLowerCase().trim(),
+      password:                hash,
+      username:                autoUsername,
+      verified:                !emailsEnabled,
+      verificationToken:       emailsEnabled ? verifyToken : null,
+      verificationTokenExpiry: emailsEnabled ? verifyExpiry : null
     });
 
-    res.status(201).json({ message: 'Cuenta creada. Ya podés iniciar sesión.', autoVerified: true });
+    if (emailsEnabled) {
+      try {
+        await sendVerificationEmail(user.email, user.name, verifyToken);
+      } catch (emailErr) {
+        console.error('[email error]', emailErr.message);
+      }
+    }
+
+    res.status(201).json({
+      message: emailsEnabled
+        ? 'Cuenta creada. Revisá tu email para verificar tu cuenta.'
+        : 'Cuenta creada. Ya podés iniciar sesión.',
+      autoVerified: !emailsEnabled
+    });
   } catch (err) {
     console.error('[register error]', err);
     res.status(500).json({ error: 'Error del servidor', detail: err.message });

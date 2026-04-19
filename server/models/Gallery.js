@@ -8,6 +8,7 @@ const photoSchema = new mongoose.Schema({
 });
 
 const gallerySchema = new mongoose.Schema({
+  owner:                 { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   name:                  { type: String, required: true, trim: true },
   clientName:            { type: String, default: '', trim: true },
   slug:                  { type: String, required: true, unique: true },

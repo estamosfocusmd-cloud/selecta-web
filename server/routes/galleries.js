@@ -44,10 +44,10 @@ function galleryToJSON(g) {
   };
 }
 
-// GET / — list all galleries
-router.get('/', async (_req, res) => {
+// GET / — list galleries for the authenticated photographer
+router.get('/', async (req, res) => {
   try {
-    const galleries = await Gallery.find().sort({ createdAt: -1 }).lean();
+    const galleries = await Gallery.find({ owner: req.user.id }).sort({ createdAt: -1 }).lean();
     res.json(galleries.map(g => ({
       id:            g._id.toString(),
       name:          g.name,
@@ -84,6 +84,7 @@ router.post('/', async (req, res) => {
     }
 
     const gallery = await Gallery.create({
+      owner:         req.user.id,
       name,
       clientName: clientName || '',
       slug,
