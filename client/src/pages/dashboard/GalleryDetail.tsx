@@ -85,6 +85,11 @@ export default function GalleryDetail() {
   const [slugInput, setSlugInput] = useState('');
   const [slugError, setSlugError] = useState('');
   const [slugSaving, setSlugSaving] = useState(false);
+
+  // Visual settings
+  const [settings, setSettings] = useState({ subtitle: '', accentColor: '#00C2A8', bgColor: 'white', viewMode: 'grid' as 'grid' | 'scroll' });
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchGallery = useCallback(async () => {
@@ -96,6 +101,13 @@ export default function GalleryDetail() {
       ]);
       setGallery(galleryRes.data);
       setSelections(selectionsRes.data);
+      const g = galleryRes.data;
+      setSettings({
+        subtitle:    g.subtitle    || '',
+        accentColor: g.accentColor || '#00C2A8',
+        bgColor:     g.bgColor     || 'white',
+        viewMode:    g.viewMode    || 'grid',
+      });
     } catch (err) {
       setError(getApiError(err));
     } finally {
@@ -173,6 +185,17 @@ export default function GalleryDetail() {
     } finally {
       setSlugSaving(false);
     }
+  };
+
+  const handleSaveSettings = async () => {
+    if (!id) return;
+    setSettingsSaving(true);
+    try {
+      await api.patch(`/galleries/${id}/settings`, settings);
+      setSettingsSaved(true);
+      setTimeout(() => setSettingsSaved(false), 2500);
+    } catch (err) { alert(getApiError(err)); }
+    finally { setSettingsSaving(false); }
   };
 
   const handleDelete = async () => {
@@ -455,6 +478,50 @@ export default function GalleryDetail() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* ── Apariencia de entrega ── */}
+        <div className="card mb-6">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Apariencia de la galería de entrega</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-zinc-400 mb-1.5">Subtítulo (opcional)</label>
+              <input className="input" placeholder="ej: Sesión en estudio · Marzo 2025" value={settings.subtitle} onChange={e => setSettings(s => ({ ...s, subtitle: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-zinc-400 mb-1.5">Color de acento</label>
+                <div className="flex items-center gap-2">
+                  <input type="color" value={settings.accentColor} onChange={e => setSettings(s => ({ ...s, accentColor: e.target.value }))} className="w-9 h-9 rounded-lg border border-gray-200 dark:border-zinc-700 cursor-pointer bg-transparent" />
+                  <input className="input flex-1" value={settings.accentColor} onChange={e => setSettings(s => ({ ...s, accentColor: e.target.value }))} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-zinc-400 mb-1.5">Fondo</label>
+                <select className="input" value={settings.bgColor} onChange={e => setSettings(s => ({ ...s, bgColor: e.target.value }))}>
+                  <option value="white">Blanco</option>
+                  <option value="black">Negro</option>
+                  <option value="#111827">Gris oscuro</option>
+                  <option value="#f3f4f6">Gris claro</option>
+                  <option value="#fafaf9">Crema</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-zinc-400 mb-1.5">Modo de vista por defecto</label>
+              <div className="flex gap-2">
+                {(['grid', 'scroll'] as const).map(m => (
+                  <button key={m} onClick={() => setSettings(s => ({ ...s, viewMode: m }))}
+                    className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-colors ${settings.viewMode === m ? 'border-brand-500 bg-brand-500/10 text-brand-600 dark:text-brand-400' : 'border-gray-200 dark:border-zinc-700 text-gray-500'}`}>
+                    {m === 'grid' ? '⊞ Cuadrícula' : '☰ Scroll'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button onClick={handleSaveSettings} disabled={settingsSaving} className="btn-primary w-full">
+              {settingsSaved ? '¡Guardado!' : settingsSaving ? 'Guardando...' : 'Guardar apariencia'}
+            </button>
+          </div>
         </div>
 
         {/* ── Galería de entrega ── */}

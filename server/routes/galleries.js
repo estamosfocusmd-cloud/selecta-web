@@ -306,4 +306,26 @@ router.get('/:id/delivery/zip', async (req, res) => {
   }
 });
 
+// PATCH /:id/settings — update gallery visual settings
+router.patch('/:id/settings', async (req, res) => {
+  try {
+    const { subtitle, accentColor, bgColor, viewMode } = req.body;
+    const allowed = {};
+    if (subtitle   !== undefined) allowed.subtitle    = subtitle;
+    if (accentColor !== undefined) allowed.accentColor = accentColor;
+    if (bgColor    !== undefined) allowed.bgColor      = bgColor;
+    if (viewMode   !== undefined && ['grid','scroll'].includes(viewMode)) allowed.viewMode = viewMode;
+    const g = await Gallery.findOneAndUpdate(
+      { _id: req.params.id, owner: req.user.id },
+      { $set: allowed },
+      { new: true }
+    );
+    if (!g) return res.status(404).json({ error: 'Galería no encontrada' });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
 module.exports = router;

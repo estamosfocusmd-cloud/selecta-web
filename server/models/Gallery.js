@@ -21,7 +21,11 @@ const gallerySchema = new mongoose.Schema({
   photos:                [photoSchema],
   deliveryPhotos:        [photoSchema],
   hasDeliveryPassword:   { type: Boolean, default: false },
-  deliveryPasswordHash:  { type: String, default: null }
+  deliveryPasswordHash:  { type: String, default: null },
+  subtitle:              { type: String, default: '' },
+  accentColor:           { type: String, default: '#00C2A8' },
+  bgColor:               { type: String, default: 'white' },
+  viewMode:              { type: String, enum: ['grid', 'scroll'], default: 'grid' }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Gallery', gallerySchema);

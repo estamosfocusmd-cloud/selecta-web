@@ -136,6 +136,10 @@ router.get('/:slug/delivery', async (req, res) => {
       id:                  g._id.toString(),
       name:                g.name,
       clientName:          g.clientName,
+      subtitle:            g.subtitle || '',
+      accentColor:         g.accentColor || '#00C2A8',
+      bgColor:             g.bgColor || 'white',
+      viewMode:            g.viewMode || 'grid',
       hasDeliveryPassword: g.hasDeliveryPassword || false,
       photoCount:          (g.deliveryPhotos || []).length,
       photos:              (g.deliveryPhotos || [])
