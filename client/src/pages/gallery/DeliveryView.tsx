@@ -32,8 +32,18 @@ function DeliveryLightbox({ photos, index, onClose, onNav, accent }: {
       if (e.key === 'ArrowRight' && index < photos.length - 1) onNav(index + 1);
     };
     document.addEventListener('keydown', handler);
-    document.body.style.overflow = 'hidden';
-    return () => { document.removeEventListener('keydown', handler); document.body.style.overflow = ''; };
+    // iOS Safari fix
+    const scrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top      = `-${scrollY}px`;
+    document.body.style.width    = '100%';
+    return () => {
+      document.removeEventListener('keydown', handler);
+      document.body.style.position = '';
+      document.body.style.top      = '';
+      document.body.style.width    = '';
+      window.scrollTo(0, scrollY);
+    };
   }, [index, photos.length, onClose, onNav]);
 
   useEffect(() => {
